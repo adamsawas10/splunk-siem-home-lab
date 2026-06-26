@@ -1,0 +1,120 @@
+# Splunk SIEM Home Lab: Windows Event Log Detection
+
+**Analyst:** Adam Sawas  
+**Tools Used:** Splunk Enterprise, Windows Event Viewer, Python  
+**Log Source:** Windows Security Event Log (.evtx)  
+**Total Events Ingested:** 618  
+**Failed Login Events Detected:** 6  
+**Date:** June 2026
+
+---
+
+## Overview
+
+This project demonstrates a working SIEM (Security Information and Event Management) environment built using Splunk Enterprise. Windows Security event logs were exported from a home lab environment, converted for ingestion, and analyzed using SPL (Splunk Processing Language) to detect brute-force login attempts — a core SOC analyst workflow.
+
+---
+
+## Lab Setup
+
+| Component | Details |
+|-----------|---------|
+| SIEM Platform | Splunk Enterprise (free tier) |
+| Log Source | Windows Security Event Log |
+| Log Format | EVTX → XML (converted via Python) |
+| Detection Target | Failed login attempts (Event ID 4625) |
+| Environment | Isolated home lab — Windows VM |
+
+---
+
+## Log Ingestion Process
+
+Windows event logs were exported from the Windows VM as a `.evtx` file using Event Viewer, then converted to XML format using a Python script for Splunk ingestion:
+
+```python
+import Evtx.Evtx as evtx
+import Evtx.Views as e_views
+
+with evtx.Evtx('Events.evtx') as log:
+    print(e_views.XML_HEADER)
+    print('<Events>')
+    for record in log.records():
+        print(record.xml())
+    print('</Events>')
+```
+
+The resulting XML file was uploaded into Splunk and indexed under the `main` index.
+
+---
+
+## SPL Queries Used
+
+### 1. Baseline — All Events
+```
+earliest=0 source="security_logs.xml"
+```
+Returned 618 total events across the log file.
+
+### 2. Failed Login Detection (Event ID 4625)
+```
+earliest=0 source="security_logs.xml" "4625"
+```
+Returned 6 failed login events — potential brute-force indicators.
+
+### 3. Username Extraction & Frequency Count
+```
+earliest=0 source="security_logs.xml" "4625"
+| rex field=_raw "TargetUserName>(?<username>[^<]+)"
+| stats count by username
+| sort -count
+```
+Extracted attempted usernames and ranked by frequency to identify most targeted accounts.
+
+### 4. Timeline of Failed Logins
+```
+earliest=0 source="security_logs.xml" "4625"
+| table SystemTime, ActivityID
+| sort SystemTime
+```
+Displayed chronological timeline of all failed login attempts.
+
+---
+
+## Key Findings
+
+- **6 failed login events** (Event ID 4625) detected across the log set
+- Multiple failed attempts clustered within a short timeframe — consistent with brute-force behavior
+- Events logged on **June 25, 2026** between 20:38 and 20:46 UTC — 3 failed attempts within 8 minutes
+- Separate earlier event logged on **April 3, 2026** indicating prior unauthorized access attempts
+- All events sourced from the same ActivityID cluster suggesting a single attack session
+
+---
+
+## Detection Dashboard
+
+A Splunk dashboard titled **Security Monitoring** was created with a **Brute Force Detection** panel displaying failed login events and timestamps in real time.
+
+![Splunk Dashboard](screenshots/splunk_dashboard.png)
+
+---
+
+## MITRE ATT&CK Mapping
+
+| Technique ID | Name |
+|-------------|------|
+| T1110 | Brute Force |
+| T1110.001 | Password Guessing |
+| T1078 | Valid Accounts |
+| T1136 | Create Account |
+
+---
+
+## Skills Demonstrated
+
+- SIEM deployment and configuration (Splunk Enterprise)
+- Windows Security event log analysis
+- SPL query writing for threat detection
+- Brute-force attack identification using Event ID 4625
+- Security dashboard creation
+- Log ingestion pipeline (EVTX → XML → Splunk)
+- SOC analyst first-response workflow
