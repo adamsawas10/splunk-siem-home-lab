@@ -1,0 +1,28 @@
+{
+  "events_analyzed": 12,
+  "alert_count": 2,
+  "alerts": [
+    {
+      "severity": "HIGH",
+      "category": "success_after_repeated_failures",
+      "source_ip": "198.51.100.23",
+      "username": "lab-user",
+      "failure_count": 5,
+      "first_failed_at": "2026-10-10T09:00:00+00:00",
+      "last_failed_at": "2026-10-10T09:04:00+00:00",
+      "success_at": "2026-10-10T09:06:00+00:00",
+      "explanation": "A successful logon followed repeated failures for the same source/account. Investigate; compromise is not confirmed."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "repeated_failed_logons",
+      "source_ip": "203.0.113.15",
+      "username": "other-user",
+      "failure_count": 5,
+      "first_failed_at": "2026-10-10T10:00:00+00:00",
+      "last_failed_at": "2026-10-10T10:04:00+00:00",
+      "success_at": null,
+      "explanation": "Repeated failed logons warrant investigation; they do not prove an attack."
+    }
+  ]
+}
